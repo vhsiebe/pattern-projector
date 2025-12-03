@@ -52,14 +52,13 @@
             />
           </UFormGroup>
           <UFormGroup label="Zoom" help="0.25x - 3x">
-            <input
-              v-model.number="projectorControls.zoom"
-              type="range"
-              min="0.25"
-              max="3"
-              step="0.05"
-              class="w-full accent-violet-500"
-            >
+            <URange
+              v-model="projectorControls.zoom"
+              :min="0.25"
+              :max="3"
+              :step="0.05"
+              color="violet"
+            />
             <div class="text-right text-xs text-white/60">{{ projectorControls.zoom.toFixed(2) }}x</div>
           </UFormGroup>
           <UFormGroup label="Offset X (px)">
