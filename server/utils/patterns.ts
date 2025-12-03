@@ -25,10 +25,10 @@ const toDocument = (doc: WithId<PatternDbDoc>): PatternDocument => ({
   updatedAt: doc.updatedAt?.toISOString?.() ?? new Date().toISOString(),
 })
 
-const getCollection = (): Collection<PatternDbDoc> => getMongoClient().db().collection('patterns')
+export const getPatternsCollection = (): Collection<PatternDbDoc> => getMongoClient().db().collection('patterns')
 
 export const listPatterns = async (ownerId: string) => {
-  const items = await getCollection().find({ ownerId }).sort({ createdAt: -1 }).toArray()
+  const items = await getPatternsCollection().find({ ownerId }).sort({ createdAt: -1 }).toArray()
   return items.map(toDocument)
 }
 
@@ -41,13 +41,13 @@ export const createPattern = async (ownerId: string, payload: PatternPayload) =>
     createdAt: now,
     updatedAt: now,
   }
-  const { insertedId } = await getCollection().insertOne(document)
+  const { insertedId } = await getPatternsCollection().insertOne(document)
   return toDocument({ ...document, _id: insertedId })
 }
 
 export const updatePattern = async (ownerId: string, id: string, payload: Partial<PatternPayload>) => {
   const data = patternSchema.partial().parse(payload)
-  const result = await getCollection().findOneAndUpdate(
+  const result = await getPatternsCollection().findOneAndUpdate(
     { _id: new ObjectId(id), ownerId },
     { $set: { ...data, updatedAt: new Date() } },
     { returnDocument: 'after' },
@@ -56,4 +56,9 @@ export const updatePattern = async (ownerId: string, id: string, payload: Partia
     throw createError({ statusCode: 404, statusMessage: 'Patroon niet gevonden' })
   }
   return toDocument(result)
+}
+
+export const findPatternById = async (ownerId: string, id: string) => {
+  const doc = await getPatternsCollection().findOne({ _id: new ObjectId(id), ownerId })
+  return doc ? toDocument(doc) : null
 }

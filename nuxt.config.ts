@@ -7,10 +7,12 @@ export default defineNuxtConfig({
   runtimeConfig: {
     mongodbUri: process.env.MONGODB_URI,
     authSecret: process.env.AUTH_SESSION_PASSWORD,
+    projectorKey: process.env.PROJECTOR_KEY,
     public: {
       appName: 'Pattern Projector',
       appDescription:
         'Pattern Projector is a browser-based companion for sewing and projecting patterns with calibration, measurement, and collaboration utilities.',
+      projectorPollInterval: Number(process.env.PROJECTOR_POLL_MS ?? 1500),
     },
   },
   tailwindcss: {

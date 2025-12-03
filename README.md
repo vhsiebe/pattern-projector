@@ -31,10 +31,58 @@ Beschikbare scripts:
 ```
 MONGODB_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/pattern-projector
 AUTH_SESSION_PASSWORD=<sterk-wachtwoord>
+PROJECTOR_KEY=<gedeelde-pi-sleutel>
+PROJECTOR_POLL_MS=1500
 ```
 
 - `AUTH_SESSION_PASSWORD` is de demo-credential. Tijdens het inloggen moet het ingevoerde wachtwoord exact overeenkomen.
 - `MONGODB_URI` verwijst bij voorkeur naar een Atlas cluster; lokale `mongodb://localhost:27017/pattern-projector` werkt ook.
+- `PROJECTOR_KEY` is een gedeeld geheim tussen dashboard en Raspberry Pi. Plak hetzelfde waarde in de Pi-omgeving zodat `/projector?key=...` geopend mag worden.
+- `PROJECTOR_POLL_MS` bepaalt hoe vaak het projectorscherm een nieuw commando ophaalt (standaard 1500ms).
+
+## Raspberry Pi HDMI projector
+
+Met de projectorbesturing in het dashboard bedien je het beeld, terwijl een Raspberry Pi het HDMI-signaal uitstuurt. Zo zet je de Pi naast de beamer en blijf je zelf achter je laptop/tablet.
+
+1. **Voorbereiding server**
+   - Stel `.env` in met `PROJECTOR_KEY`.
+   - Start de Nuxt-app met netwerktoegang, bv. `yarn dev --host 0.0.0.0` of deploy de productiebuild (`node .output/server/index.mjs`).
+   - Open het dashboard (`/dashboard`), kies een patroon en gebruik de projector-sliders/knoppen.
+2. **Raspberry Pi configuratie**
+   - Gebruik Raspberry Pi OS (Bookworm of Bullseye) en installeer Chromium:  
+     `sudo apt update && sudo apt install chromium-browser unclutter`
+   - Zet omgevingsvariabelen (bijv. in `~/.profile`):
+     ```bash
+     export PROJECTOR_HOST=http://<NUXT_SERVER_IP>:3000
+     export PROJECTOR_KEY=<zelfde-als-in-.env>
+     ```
+   - Maak het helper-script uitvoerbaar en start kiosk-modus:
+     ```bash
+     chmod +x scripts/pi-kiosk.sh
+     PROJECTOR_HOST=http://192.168.0.50:3000 PROJECTOR_KEY=<key> ./scripts/pi-kiosk.sh
+     ```
+     Het script opent Chromium fullscreen op `PROJECTOR_HOST/projector?key=<key>`.
+3. **Autostart (optioneel)**
+   - Maak `/etc/systemd/system/pattern-projector.service` met:
+     ```ini
+     [Unit]
+     Description=Pattern Projector HDMI kiosk
+     After=network-online.target
+
+     [Service]
+     Environment=PROJECTOR_HOST=http://192.168.0.50:3000
+     Environment=PROJECTOR_KEY=<key>
+     ExecStart=/usr/bin/env bash /home/pi/pattern-projector/scripts/pi-kiosk.sh
+     Restart=always
+     User=pi
+     WorkingDirectory=/home/pi/pattern-projector
+
+     [Install]
+     WantedBy=multi-user.target
+     ```
+   - Activeer met `sudo systemctl enable --now pattern-projector`.
+
+Zodra de Pi verbonden is, blijft `/projector` verversen op basis van de ingestelde `PROJECTOR_POLL_MS`. Alle wijzigingen (zoom, offset, spiegeling, invert) die je in het dashboard uitvoert, worden vrijwel realtime overgenomen.
 
 ## Architectuur
 
