@@ -1,3 +1,0 @@
-export const CSS_PIXELS_PER_INCH = 96.0;
-export const PDF_PIXELS_PER_INCH = 72.0;
-export const PDF_TO_CSS_UNITS = CSS_PIXELS_PER_INCH / PDF_PIXELS_PER_INCH;
