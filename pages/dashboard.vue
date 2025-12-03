@@ -1,37 +1,149 @@
 <template>
-  <section class="mx-auto max-w-6xl px-6 py-12">
-    <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div>
-        <p class="text-sm uppercase text-white/60">Project ruimte</p>
-        <h1 class="text-3xl font-semibold">Mijn patronen</h1>
-      </div>
-      <div class="flex gap-3">
-        <UButton color="white" variant="soft" icon="i-ph-upload-duotone" @click="openUpload = true">
-          Upload
-        </UButton>
-        <UButton color="violet" icon="i-ph-sign-out-duotone" @click="logout">Uitloggen</UButton>
-      </div>
+  <UContainer class="space-y-10 py-10">
+    <div class="grid gap-6 lg:grid-cols-[2fr,1fr]">
+      <UCard class="bg-gradient-to-br from-violet-600/50 to-indigo-700/40 text-white shadow-2xl">
+        <div class="flex flex-col gap-6">
+          <div class="space-y-3">
+            <UBadge color="white" variant="soft" class="text-black/80">Creatieve cockpit</UBadge>
+            <h1 class="text-4xl font-semibold leading-tight">
+              Projecteer patronen met vertrouwen en realtime controle.
+            </h1>
+            <p class="text-white/80">
+              Upload nieuwe patronen, kalibreer je projector en deel instellingen met je Raspberry Pi of elk ander
+              apparaat dat inlogt op dit dashboard.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <UButton size="lg" color="white" icon="i-ph-upload-duotone" @click="openUpload = true">
+              Nieuw patroon
+            </UButton>
+            <UButton
+              size="lg"
+              color="gray"
+              variant="soft"
+              icon="i-ph-projector-screen-duotone"
+              :to="projectorUrl || '/projector'"
+            >
+              Open projector
+            </UButton>
+            <UButton size="lg" variant="ghost" color="white" icon="i-ph-sign-out-duotone" @click="logout">
+              Uitloggen
+            </UButton>
+          </div>
+          <div class="grid gap-4 sm:grid-cols-3">
+            <div class="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+              <p class="text-sm uppercase text-white/70">Patronen</p>
+              <p class="text-3xl font-semibold">{{ patternCount }}</p>
+              <p class="text-xs text-white/70">Beschikbaar in de bibliotheek</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+              <p class="text-sm uppercase text-white/70">Projector</p>
+              <p class="text-3xl font-semibold">{{ projectorStatusLabel }}</p>
+              <p class="text-xs text-white/70">{{ activePatternTitle }}</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+              <p class="text-sm uppercase text-white/70">Sessies</p>
+              <p class="text-3xl font-semibold">{{ projectorKey ? 'Remote' : 'Lokaal' }}</p>
+              <p class="text-xs text-white/70">Projectorlink {{ projectorKey ? 'gedeeld' : 'nog verbergen' }}</p>
+            </div>
+          </div>
+        </div>
+      </UCard>
+
+      <UCard class="bg-slate-900/60">
+        <template #header>
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-medium">Snelle acties</span>
+            <UBadge color="violet" variant="soft">Workflow</UBadge>
+          </div>
+        </template>
+        <div class="space-y-4">
+          <UFormGroup label="Projector link">
+            <div class="flex gap-2">
+              <UInput :model-value="projectorUrl || 'Nog geen sleutel'" readonly />
+              <UButton color="violet" icon="i-ph-copy-duotone" :disabled="!projectorUrl" @click="copyProjectorLink" />
+            </div>
+          </UFormGroup>
+          <USeparator />
+          <UVerticalNavigation
+            :links="[
+              { label: 'Kalibratie openen', icon: 'i-ph-ruler-duotone', to: '/calibrate' },
+              { label: 'Bekijk projector', icon: 'i-ph-projector-screen-duotone', to: projectorUrl || '/projector' },
+              { label: 'Ga naar documentatie', icon: 'i-ph-book-duotone', to: 'https://github.com/Pattern-Projector/pattern-projector' },
+            ]"
+          />
+        </div>
+      </UCard>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-3">
+      <UCard class="bg-slate-900/60">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm uppercase text-white/60">Actieve patronen</p>
+            <p class="text-2xl font-semibold">{{ patternCount }}</p>
+          </div>
+          <UIcon name="i-ph-folders-duotone" class="text-3xl text-violet-400" />
+        </div>
+        <p class="mt-2 text-sm text-white/70">Beheer lagen, instructies en projecteer ze direct.</p>
+      </UCard>
+      <UCard class="bg-slate-900/60">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm uppercase text-white/60">Projector status</p>
+            <p class="text-2xl font-semibold">{{ projectorStatusLabel }}</p>
+          </div>
+          <UIcon name="i-ph-lightning-duotone" class="text-3xl text-emerald-400" />
+        </div>
+        <p class="mt-2 text-sm text-white/70">{{ projectorBadgeText }}</p>
+      </UCard>
+      <UCard class="bg-slate-900/60">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm uppercase text-white/60">Laatste sync</p>
+            <p class="text-2xl font-semibold">
+              {{ projectorState?.updatedAt ? formatDate(projectorState.updatedAt) : 'Nog niet gesynchroniseerd' }}
+            </p>
+          </div>
+          <UIcon name="i-ph-clock-duotone" class="text-3xl text-sky-400" />
+        </div>
+        <p class="mt-2 text-sm text-white/70">Alle wijzigingen worden automatisch doorgegeven aan de Pi.</p>
+      </UCard>
     </div>
 
     <UCard class="bg-slate-900/60">
       <template #header>
-        <div class="flex items-center justify-between">
-          <span class="font-medium">Actieve patronen</span>
-          <span class="text-sm text-white/60">{{ patterns?.length ?? 0 }} items</span>
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div class="flex items-center gap-3">
+            <span class="font-medium">Patroonbibliotheek</span>
+            <UBadge variant="soft" color="gray">{{ patternCount }} items</UBadge>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <UInput
+              v-model="search"
+              icon="i-ph-magnifying-glass-duotone"
+              placeholder="Zoek op naam"
+              color="gray"
+            />
+            <UButton color="white" variant="soft" icon="i-ph-upload-duotone" @click="openUpload = true">
+              Nieuw
+            </UButton>
+          </div>
         </div>
       </template>
+
       <div v-if="pending" class="flex items-center gap-3 text-white/70">
         <ULoader size="lg" /> Laden...
       </div>
-      <div v-else-if="!patterns?.length" class="text-white/60">
-        Nog geen patronen. Upload je eerste ontwerp.
+      <div v-else-if="!filteredPatterns.length" class="text-white/60">
+        Geen patronen gevonden voor deze zoekopdracht.
       </div>
       <div v-else class="grid gap-4 md:grid-cols-2">
-        <PatternCard v-for="pattern in patterns" :key="pattern._id" :pattern="pattern" />
+        <PatternCard v-for="pattern in filteredPatterns" :key="pattern._id" :pattern="pattern" />
       </div>
     </UCard>
 
-    <section class="mt-10 grid gap-6 lg:grid-cols-[3fr,2fr]">
+    <section class="grid gap-6 lg:grid-cols-[3fr,2fr]">
       <UCard class="bg-slate-900/60">
         <template #header>
           <div class="flex items-center justify-between">
@@ -52,13 +164,7 @@
             />
           </UFormGroup>
           <UFormGroup label="Zoom" help="0.25x - 3x">
-            <URange
-              v-model="projectorControls.zoom"
-              :min="0.25"
-              :max="3"
-              :step="0.05"
-              color="violet"
-            />
+            <URange v-model="projectorControls.zoom" :min="0.25" :max="3" :step="0.05" color="violet" />
             <div class="text-right text-xs text-white/60">{{ projectorControls.zoom.toFixed(2) }}x</div>
           </UFormGroup>
           <UFormGroup label="Offset X (px)">
@@ -70,11 +176,7 @@
         </div>
 
         <div class="mt-6 grid gap-4 md:grid-cols-3">
-          <UToggle
-            v-model="projectorControls.invertColors"
-            label="Inverteer kleuren"
-            :disabled="projectorSaving"
-          />
+          <UToggle v-model="projectorControls.invertColors" label="Inverteer kleuren" :disabled="projectorSaving" />
           <UToggle v-model="projectorControls.mirrorX" label="Spiegel horizontaal" :disabled="projectorSaving" />
           <UToggle v-model="projectorControls.mirrorY" label="Spiegel verticaal" :disabled="projectorSaving" />
         </div>
@@ -142,7 +244,7 @@
         </form>
       </UCard>
     </UModal>
-  </section>
+  </UContainer>
 </template>
 
 <script setup lang="ts">
@@ -153,6 +255,7 @@ import type { ProjectorState, ProjectorStatePayload } from '~/types/projector'
 
 const openUpload = ref(false)
 const creating = ref(false)
+const search = ref('')
 const form = reactive({ title: '', description: '', url: '' })
 
 const {
@@ -293,8 +396,23 @@ const copyProjectorLink = async () => {
   toast.add({ title: 'Projectorlink gekopieerd', color: 'violet' })
 }
 
+const patternCount = computed(() => patterns.value?.length ?? 0)
+const filteredPatterns = computed(() => {
+  const query = search.value.trim().toLowerCase()
+  const list = patterns.value ?? []
+  if (!query) return list
+  return list.filter((pattern) => pattern.title.toLowerCase().includes(query))
+})
+
 const patternOptions = computed(() =>
   (patterns.value ?? []).map((pattern) => ({ label: pattern.title, value: pattern._id })),
+)
+
+const projectorActive = computed(() => Boolean(projectorState.value?.pattern))
+const projectorStatusLabel = computed(() => (projectorActive.value ? 'Actief' : 'Idle'))
+const activePatternTitle = computed(() => projectorState.value?.pattern?.title ?? 'Nog geen selectie')
+const projectorBadgeText = computed(() =>
+  projectorActive.value ? `Toont ${activePatternTitle.value}` : 'Selecteer een patroon om te projecteren.',
 )
 
 const alertMessage = computed(() =>
