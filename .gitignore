@@ -8,9 +8,16 @@
 # testing
 /coverage
 
-# next.js
+# next.js legacy
 /.next/
 /out/
+
+# nuxt
+/.nuxt
+/.output
+
+# legacy snapshot of de oude React-app
+/legacy-react-app
 
 # production
 /build
